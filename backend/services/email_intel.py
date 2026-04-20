@@ -1,5 +1,6 @@
 import asyncio
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -32,7 +33,8 @@ class EmailIntelligence:
                 "breaches": [],
             }
 
-        url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
+        encoded_email = quote(email, safe="")
+        url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{encoded_email}"
         headers = {
             "hibp-api-key": settings.hibp_api_key,
             "user-agent": settings.hibp_user_agent,

@@ -15,6 +15,9 @@ cp .env.example .env
 - `HIBP_API_KEY` (required for live HaveIBeenPwned queries)
 - `HIBP_USER_AGENT` (optional, defaults to `Email-Search-Audit`)
 - `REDIS_URL` (optional, defaults to `redis://redis:6379/0`)
+- `CORS_ALLOWED_ORIGINS` (comma-separated origins, e.g. `http://localhost:5173,http://127.0.0.1:5173`)
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
+- `WS_IDLE_TIMEOUT_SECONDS` and `WS_MAX_MESSAGE_SIZE_BYTES`
 
 3. Start all services:
 
@@ -44,12 +47,12 @@ npm run dev
 
 ## API
 
-- `POST /api/v1/scan` (rate-limited to `5/minute` per IP)
+- `POST /api/v1/scan` (rate-limited with IP + User-Agent + target fingerprint controls)
 - `WS /ws/{scan_id}` for streaming scan status updates
 
 ## Consent Requirement
 
 Scans are only accepted when `user_consent=true` and strict target validation passes:
 
-- Email: regex validation
+- Email: RFC 5322-compatible regex validation
 - Phone: E.164 format (e.g., `+1234567890`)
