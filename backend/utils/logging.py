@@ -19,7 +19,8 @@ def sanitize_payload(payload: Any) -> Any:
     if isinstance(payload, dict):
         sanitized: dict[str, Any] = {}
         for key, value in payload.items():
-            if any(marker in key.lower() for marker in SENSITIVE_FIELDS):
+            key_lower = key.lower()
+            if any(marker in key_lower for marker in SENSITIVE_FIELDS):
                 sanitized[key] = REDACTED
             else:
                 sanitized[key] = sanitize_payload(value)

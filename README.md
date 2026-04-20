@@ -18,6 +18,7 @@ cp .env.example .env
 - `CORS_ALLOWED_ORIGINS` (comma-separated origins, e.g. `http://localhost:5173,http://127.0.0.1:5173`)
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
 - `WS_IDLE_TIMEOUT_SECONDS` and `WS_MAX_MESSAGE_SIZE_BYTES`
+- `RATE_LIMIT_SALT` (unique per deployment for HMAC-based rate-limit fingerprinting)
 
 3. Start all services:
 

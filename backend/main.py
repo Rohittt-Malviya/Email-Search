@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-import json
+import uuid
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,7 @@ from backend.api.websocket import manager, router as ws_router
 from backend.core.config import settings
 from backend.services.email_intel import email_intel_service
 from backend.utils.cache import close_cache
-from backend.utils.logging import get_logger, sanitize_headers, sanitize_payload
+from backend.utils.logging import get_logger, sanitize_headers
 
 logger = get_logger(__name__)
 
@@ -41,13 +42,8 @@ app.add_middleware(
 
 @app.middleware("http")
 async def secure_logging_middleware(request: Request, call_next):
-    body = await request.body()
-    request_payload: object | str = {}
-    if body:
-        try:
-            request_payload = sanitize_payload(json.loads(body))
-        except json.JSONDecodeError:
-            request_payload = "<non-json>"
+    """Log sanitized request metadata and return correlation IDs for unexpected server errors."""
+    request_payload: dict[str, Any] | None = None
 
     request_headers = sanitize_headers(dict(request.headers))
     logger.info(
@@ -55,22 +51,18 @@ async def secure_logging_middleware(request: Request, call_next):
         extra={"method": request.method, "path": request.url.path, "headers": request_headers, "payload": request_payload},
     )
 
-    consumed = False
-
-    async def receive() -> dict[str, object]:
-        nonlocal consumed
-        if consumed:
-            return {"type": "http.request", "body": b"", "more_body": False}
-        consumed = True
-        return {"type": "http.request", "body": body, "more_body": False}
-
-    request._receive = receive  # type: ignore[attr-defined]
-
     try:
         response = await call_next(request)
     except Exception:
-        logger.exception("Unhandled server error", extra={"method": request.method, "path": request.url.path})
-        return JSONResponse(status_code=500, content={"detail": "An unexpected error occurred. Please try again."})
+        error_id = str(uuid.uuid4())
+        logger.exception(
+            "Unhandled server error",
+            extra={"error_id": error_id, "method": request.method, "path": request.url.path},
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred. Please try again.", "error_id": error_id},
+        )
 
     logger.info(
         "response",

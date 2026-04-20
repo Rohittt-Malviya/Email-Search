@@ -36,12 +36,12 @@ def test_hibp_request_url_encodes_email(monkeypatch) -> None:
     service = EmailIntelligence()
     captured: dict[str, str] = {}
 
-    class DummyResponse:
+    class MockResponse:
         status_code = 404
 
-    async def fake_get(url: str, **_: object) -> DummyResponse:
+    async def fake_get(url: str, **_: object) -> MockResponse:
         captured["url"] = url
-        return DummyResponse()
+        return MockResponse()
 
     monkeypatch.setattr(settings, "hibp_api_key", "test-key")
     monkeypatch.setattr(service.client, "get", fake_get)
