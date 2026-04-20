@@ -1,6 +1,9 @@
 from collections import defaultdict
+import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from backend.core.config import settings
 
 router = APIRouter()
 
@@ -50,6 +53,16 @@ async def scan_updates(websocket: WebSocket, scan_id: str) -> None:
     await manager.connect(scan_id, websocket)
     try:
         while True:
-            await websocket.receive_text()
+            message = await asyncio.wait_for(
+                websocket.receive_text(),
+                timeout=settings.ws_idle_timeout_seconds,
+            )
+            if len(message.encode("utf-8")) > settings.ws_max_message_size_bytes:
+                await websocket.close(code=1009, reason="Message too large")
+                break
+    except asyncio.TimeoutError:
+        await websocket.close(code=1000, reason="Idle timeout")
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(scan_id, websocket)
